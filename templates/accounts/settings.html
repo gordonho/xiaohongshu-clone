@@ -22,7 +22,7 @@
                         <img src="{{ user.profile.avatar.url|default:'/media/avatars/default.png' }}" class="avatar-lg mb-2" alt="avatar" id="avatar-preview">
                         <div>
                             <label for="avatar" class="btn btn-sm btn-outline-primary">更换头像</label>
-                            <input type="file" id="avatar" name="avatar" accept="image/*" onchange="previewAvatar(this)">
+                            <input type="file" id="avatar" name="avatar" accept="image/*" onchange="previewAvatar(this)" style="display: none;">
                         </div>
                     </div>
                     
