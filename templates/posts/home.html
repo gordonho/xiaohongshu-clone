@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}首页 - 小红书{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 左侧边栏 -->
+    <div class="col-lg-3 d-none d-lg-block">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if user.is_authenticated %}
+                    <img src="{{ user.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar-lg mb-3" alt="{{ user.username }}">
+                    <h5>{{ user.username }}</h5>
+                    <p class="text-muted">{{ user.profile.bio|default:'还没有简介' }}</p>
+                    <div class="d-flex justify-content-around">
+                        <div>
+                            <strong>{{ user.profile.posts_count }}</strong>
+                            <div class="text-muted small">笔记</div>
+                        </div>
+                        <div>
+                            <strong>{{ user.profile.followers_count }}</strong>
+                            <div class="text-muted small">粉丝</div>
+                        </div>
+                        <div>
+                            <strong>{{ user.profile.following_count }}</strong>
+                            <div class="text-muted small">关注</div>
+                        </div>
+                    </div>
+                {% else %}
+                    <p>登录后享受更多功能</p>
+                    <a href="{% url 'login' %}" class="btn btn-primary">立即登录</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">热门话题</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="tag">#美食</span>
+                    <span class="tag">#旅行</span>
+                    <span class="tag">#穿搭</span>
+                    <span class="tag">#美妆</span>
+                    <span class="tag">#健身</span>
+                    <span class="tag">#摄影</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 中间内容 -->
+    <div class="col-lg-6 col-md-8">
+        {% for post in page_obj %}
+        <div class="card post-card">
+            {% if post.image %}
+            <img src="{{ post.image.url }}" class="card-img-top" alt="{{ post.title }}">
+            {% endif %}
+            <div class="card-body">
+                <!-- 作者信息 -->
+                <div class="d-flex align-items-center mb-2">
+                    <img src="{{ post.author.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar avatar-sm me-2" alt="{{ post.author.username }}">
+                    <div>
+                        <a href="{% url 'profile' post.author.username %}" class="text-decoration-none text-dark fw-bold">{{ post.author.username }}</a>
+                    </div>
+                </div>
+                
+                <!-- 标题和内容 -->
+                <h5 class="card-title">
+                    <a href="{% url 'post_detail' post.pk %}" class="text-decoration-none text-dark">{{ post.title }}</a>
+                </h5>
+                <p class="card-text text-muted">{{ post.content|truncatewords:30 }}</p>
+                
+                <!-- 标签 -->
+                {% if post.tags %}
+                <div class="mb-2">
+                    {% for tag in post.get_tags_list %}
+                    <span class="tag">#{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- 互动按钮 -->
+                <div class="d-flex align-items-center">
+                    <a href="#" class="action-btn {% if post.id in liked_posts %}active{% endif %}" onclick="likePost({{ post.id }}); return false;">
+                        <i class="bi bi-heart{% if post.id in liked_posts %}-fill{% endif %}"></i>
+                        <span>{{ post.likes_count }}</span>
+                    </a>
+                    <a href="{% url 'post_detail' post.pk %}" class="action-btn">
+                        <i class="bi bi-chat"></i>
+                        <span>{{ post.comments_count }}</span>
+                    </a>
+                    <a href="#" class="action-btn {% if post.id in collected_posts %}active{% endif %}" onclick="collectPost({{ post.id }}); return false;">
+                        <i class="bi bi-bookmark{% if post.id in collected_posts %}-fill{% endif %}"></i>
+                        <span>{{ post.collects_count }}</span>
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer text-muted small">
+                {{ post.created_at|date:"Y-m-d H:i" }}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <h4 class="text-muted">还没有笔记</h4>
+            <p>快来发布第一篇笔记吧！</p>
+            <a href="{% url 'create_post' %}" class="btn btn-primary">发布笔记</a>
+        </div>
+        {% endfor %}
+        
+        <!-- 分页 -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一页</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+    
+    <!-- 右侧边栏 -->
+    <div class="col-lg-3 col-md-4 d-none d-md-block">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">推荐关注</h6>
+                {% for user in recommended_users %}
+                <div class="d-flex align-items-center mb-3">
+                    <img src="{{ user.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar avatar-sm me-2" alt="{{ user.username }}">
+                    <div class="flex-grow-1">
+                        <a href="{% url 'profile' user.username %}" class="text-decoration-none text-dark">{{ user.username }}</a>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="followUser({{ user.id }})">关注</button>
+                </div>
+                {% empty %}
+                <p class="text-muted">暂无推荐</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+<script>
+function likePost(postId) {
+    fetch(`/post/${postId}/like/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        location.reload();
+    });
+}
+
+function collectPost(postId) {
+    fetch(`/post/${postId}/collect/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        location.reload();
+    });
+}
+
+function followUser(userId) {
+    fetch(`/accounts/follow/${userId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        location.reload();
+    });
+}
+</script>
+{% endblock %}

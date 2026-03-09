@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}设置 - 小红书{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="mb-4">个人设置</h3>
+                
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+                {% endif %}
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="text-center mb-4">
+                        <img src="{{ user.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar-lg mb-2" alt="avatar">
+                        <div>
+                            <label for="avatar" class="btn btn-sm btn-outline-primary">更换头像</label>
+                            <input type="file" id="avatar" name="avatar" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                        <small class="text-muted">用户名无法修改</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">邮箱</label>
+                        <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">个人简介</label>
+                        <textarea class="form-control" id="bio" name="bio" rows="3" placeholder="介绍一下自己...">{{ user.profile.bio|default:'' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="gender" class="form-label">性别</label>
+                        <select class="form-select" id="gender" name="gender">
+                            <option value="male" {% if user.profile.gender == 'male' %}selected{% endif %}>男</option>
+                            <option value="female" {% if user.profile.gender == 'female' %}selected{% endif %}>女</option>
+                            <option value="other" {% if user.profile.gender == 'other' %}selected{% endif %}>其他</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">所在地</label>
+                        <input type="text" class="form-control" id="location" name="location" value="{{ user.profile.location|default:'' }}" placeholder="例如：北京、上海">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="website" class="form-label">个人网站</label>
+                        <input type="url" class="form-control" id="website" name="website" value="{{ user.profile.website|default:'' }}" placeholder="https://example.com">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">保存设置</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

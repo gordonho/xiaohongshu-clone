@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ post.title }} - 小红书{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- 帖子内容 -->
+        <div class="card mb-4">
+            {% if post.image %}
+            <img src="{{ post.image.url }}" class="card-img-top" alt="{{ post.title }}" style="max-height: 500px; object-fit: contain;">
+            {% endif %}
+            <div class="card-body">
+                <!-- 作者信息 -->
+                <div class="d-flex align-items-center mb-3">
+                    <img src="{{ post.author.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar me-2" alt="{{ post.author.username }}">
+                    <div>
+                        <a href="{% url 'profile' post.author.username %}" class="text-decoration-none text-dark fw-bold">{{ post.author.username }}</a>
+                        <div class="text-muted small">{{ post.created_at|date:"Y-m-d H:i" }}</div>
+                    </div>
+                </div>
+                
+                <h3 class="card-title">{{ post.title }}</h3>
+                <p class="card-text">{{ post.content|linebreaks }}</p>
+                
+                {% if post.tags %}
+                <div class="mb-3">
+                    {% for tag in post.get_tags_list %}
+                    <span class="tag">#{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- 互动按钮 -->
+                <div class="d-flex align-items-center border-top border-bottom py-3">
+                    <a href="#" class="action-btn {% if is_liked %}active{% endif %}" onclick="likePost({{ post.id }}); return false;">
+                        <i class="bi bi-heart{% if is_liked %}-fill{% endif %}"></i>
+                        <span>{{ post.likes_count }} 赞</span>
+                    </a>
+                    <a href="#" class="action-btn {% if is_collected %}active{% endif %}" onclick="collectPost({{ post.id }}); return false;">
+                        <i class="bi bi-bookmark{% if is_collected %}-fill{% endif %}"></i>
+                        <span>{{ post.collects_count }} 收藏</span>
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="bi bi-chat"></i>
+                        <span>{{ post.comments_count }} 评论</span>
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="bi bi-share"></i>
+                        <span>分享</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 评论 -->
+        <div class="card">
+            <div class="card-body">
+                <h5>评论 ({{ comments.count }})</h5>
+                
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'comment_post' post.pk %}" class="mb-4">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" rows="2" placeholder="说点什么..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">发表评论</button>
+                </form>
+                {% else %}
+                <p><a href="{% url 'login' %}">登录</a>后发表评论</p>
+                {% endif %}
+                
+                {% for comment in comments %}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="{{ comment.author.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar avatar-sm me-2" alt="{{ comment.author.username }}">
+                        <div>
+                            <a href="{% url 'profile' comment.author.username %}" class="text-decoration-none text-dark fw-bold">{{ comment.author.username }}</a>
+                            <span class="text-muted small ms-2">{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+                        </div>
+                    </div>
+                    <p class="mb-2">{{ comment.content }}</p>
+                    <a href="#" class="small text-muted" onclick="likeComment({{ comment.id }}); return false;">
+                        <i class="bi bi-heart{% if comment.id in liked_comments %}-fill{% endif %}"></i>
+                        {{ comment.likes_count }}
+                    </a>
+                    
+                    <!-- 回复 -->
+                    {% for reply in comment.replies.all %}
+                    <div class="ms-4 mt-2">
+                        <div class="d-flex align-items-center mb-1">
+                            <img src="{{ reply.author.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar avatar-sm me-2" alt="{{ reply.author.username }}">
+                            <div>
+                                <a href="{% url 'profile' reply.author.username %}" class="text-decoration-none text-dark fw-bold">{{ reply.author.username }}</a>
+                                <span class="text-muted small ms-2">{{ reply.created_at|date:"Y-m-d H:i" }}</span>
+                            </div>
+                        </div>
+                        <p class="mb-1">{{ reply.content }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% empty %}
+                <p class="text-muted">还没有评论，快来抢沙发吧！</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 侧边栏 -->
+    <div class="col-lg-4">
+        <!-- 作者其他笔记 -->
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">作者的更多笔记</h6>
+                {% for p in post.author.posts.all|slice:":5" %}
+                {% if p.id != post.id %}
+                <div class="d-flex align-items-center mb-2">
+                    {% if p.image %}
+                    <img src="{{ p.image.url }}" class="me-2" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                    {% endif %}
+                    <a href="{% url 'post_detail' p.pk %}" class="text-decoration-none text-dark">{{ p.title|truncatewords:10 }}</a>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+<script>
+function likePost(postId) {
+    fetch(`/post/${postId}/like/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    }).then(() => location.reload());
+}
+
+function collectPost(postId) {
+    fetch(`/post/${postId}/collect/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    }).then(() => location.reload());
+}
+
+function likeComment(commentId) {
+    fetch(`/comment/${commentId}/like/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    }).then(() => location.reload());
+}
+</script>
+{% endblock %}

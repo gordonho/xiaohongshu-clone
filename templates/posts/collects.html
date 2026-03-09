@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}我的收藏 - 小红书{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <h4 class="mb-4">我的收藏</h4>
+        
+        {% for post in page_obj %}
+        <div class="card post-card mb-3">
+            {% if post.image %}
+            <img src="{{ post.image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 150px;">
+            {% endif %}
+            <div class="card-body">
+                <h5><a href="{% url 'post_detail' post.pk %}" class="text-decoration-none text-dark">{{ post.title }}</a></h5>
+                <p class="text-muted">{{ post.content|truncatewords:20 }}</p>
+                <div class="d-flex align-items-center">
+                    <img src="{{ post.author.profile.avatar.url|default:'/static/default-avatar.png' }}" class="avatar avatar-sm me-2">
+                    <span class="me-auto">{{ post.author.username }}</span>
+                    <span class="text-muted small">{{ post.likes_count }} 赞 · {{ post.comments_count }} 评论</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <h5 class="text-muted">还没有收藏任何笔记</h5>
+            <a href="{% url 'home' %}" class="btn btn-primary mt-3">去首页看看</a>
+        </div>
+        {% endfor %}
+        
+        {% if page_obj.has_other_pages %}
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一页</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
