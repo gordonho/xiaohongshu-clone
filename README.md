@@ -1,6 +1,6 @@
-# 小红书类社交平台 - Xiaohongshu Clone
+# 小红说类社交平台 - Xiaohongshu Clone
 
-基于 Django 的社交分享平台，类似于小红书的核心功能。
+基于 Django 的社交分享平台，类似于小红说的核心功能。
 
 ## 功能特性
 
